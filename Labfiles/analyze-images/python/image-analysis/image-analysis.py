@@ -5,6 +5,7 @@ import sys
 from matplotlib import pyplot as plt
 from azure.core.exceptions import HttpResponseError
 import requests
+from pathlib import Path
 
 # import namespaces
 from azure.ai.vision.imageanalysis import ImageAnalysisClient
@@ -15,10 +16,15 @@ def main(argv):
 
     # Clear the console
     os.system('cls' if os.name=='nt' else 'clear')
+    env_file = Path(__file__).parents[4] / '.env'    
+    
+    try:
+        load_dotenv(env_file)
+    except Exception as ex:
+        raise Exception(f"Error loading .env file {env_file}. Make sure it exists and is properly configured.")
 
     try:
         # Get Configuration Settings
-        load_dotenv()
         ai_endpoint = os.getenv('AI_SERVICE_ENDPOINT')
         ai_key = os.getenv('AI_SERVICE_KEY')
 
@@ -70,11 +76,28 @@ def main(argv):
 
 
         # Get objects in the image
+        # Get objects in the image
+        if result.objects is not None:
+            print("\nObjects in image:")
+            for detected_object in result.objects.list:
+                # Print object tag and confidence
+                print(" {} (confidence: {:.2f}%)".format(detected_object.tags[0].name, detected_object.tags[0].confidence * 100))
+            # Annotate objects in the image
+            show_objects(image_file, result.objects.list)
 
 
         # Get people in the image
-  
-            
+        # Get people in the image
+        if result.people is not None:
+            print("\nPeople in image:")
+
+            for detected_person in result.people.list:
+                if detected_person.confidence > 0.2:
+                    # Print location and confidence of each person detected
+                    print(" {} (confidence: {:.2f}%)".format(detected_person.bounding_box, detected_person.confidence * 100))
+            # Annotate people in the image
+            show_people(image_file, result.people.list)
+
         
     except Exception as ex:
         print(ex)
